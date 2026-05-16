@@ -4,6 +4,7 @@ CC-MAIN-2023-50/
 nav
 tags
 data/
+local-shared-data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
