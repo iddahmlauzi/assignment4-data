@@ -9,6 +9,7 @@ DATA_DIR = PROJECT_ROOT / "local-shared-data"
 
 # REGEX PATTERNS
 EMAIL_PAT = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b')
+PHONE_PAT = re.compile(r'[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}\b')
 
 def extract_text(html_bytes: bytes) -> str:
     """Extracts text from a byte string containing raw HTML"""
@@ -40,7 +41,7 @@ def mask_emails(text: str) -> str:
 
 def mask_phone_numbers(text: str) -> str:
     """Masks all phone numbers in the provided text"""
-    pass
+    return PHONE_PAT.subn("|||PHONE_NUMBER|||", text)
 
     
     

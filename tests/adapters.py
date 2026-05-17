@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
-from scripts.filtering import extract_text, identify_language, mask_emails
+from scripts.filtering import extract_text, identify_language, mask_emails, mask_phone_numbers
 
 
 
@@ -19,7 +19,7 @@ def run_mask_emails(text: str) -> tuple[str, int]:
 
 
 def run_mask_phone_numbers(text: str) -> tuple[str, int]:
-    raise NotImplementedError
+    return mask_phone_numbers(text)
 
 
 def run_mask_ips(text: str) -> tuple[str, int]:
