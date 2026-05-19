@@ -6,7 +6,7 @@ from tqdm import tqdm
 from fastwarc.warc import ArchiveIterator, WarcRecordType
 from resiliparse.parse.encoding import detect_encoding
 from pathlib import Path
-from filtering import (
+from cs336_data.filtering import (
     extract_text, 
     identify_language,
     mask_emails,
@@ -14,6 +14,7 @@ from filtering import (
     mask_ip_addresses,
     classify_toxic_speech,
     classify_nsfw,
+    gopher_quality_filter
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -64,7 +65,7 @@ def run_identify_language_exercise():
             all_texts.append(extracted_text)
     
     # Sample 20 random texts
-    sampled_texts = random.sample(all_texts, k=20)
+    sampled_texts = random.sample(all_texts, k=200)
     
     result = []
     for text in sampled_texts:
@@ -77,6 +78,7 @@ def run_identify_language_exercise():
         json.dump(result, f, indent=2, ensure_ascii=False)
         
     print("Successfully ran the identify language exercise : )")
+    
     
 def run_mask_pii_exercise():
     """Problem (mask_pii):  Personally identifiable information"""
@@ -105,6 +107,7 @@ def run_mask_pii_exercise():
         json.dump(sampled_texts, f, indent=2, ensure_ascii=False)
         
     print("Successfully ran the mask pii exercise : )")
+    
     
 def run_harmful_content_exercise():
     """Problem (harmful_content):  Harmful content"""
@@ -135,6 +138,34 @@ def run_harmful_content_exercise():
         json.dump(result, f, indent=2, ensure_ascii=False)
         
     print("Successfully ran the harmful content exercise : )")
+    
+
+def run_gopher_quality_filters_exercise():
+    """Problem (gopher_quality_filters)"""
+    all_texts = []
+    with open(DATA_DIR / "CC" / "example.warc.gz", "rb") as f:
+        for record in tqdm(ArchiveIterator(f, record_types=WarcRecordType.response)):
+            html_bytes = record.reader.read()
+            extracted_text = extract_text(html_bytes)
+            lang, _ = identify_language(extracted_text)
+            if lang == "en":
+                all_texts.append(extracted_text)
+                
+    # Sample 20 random texts
+    sampled_texts = random.sample(all_texts, k=20)
+    
+    result = []
+    for text in sampled_texts:
+        is_good_quality = gopher_quality_filter(text)
+        result.append({
+            "text": text,
+            "is_good_quality": is_good_quality
+        })
+        
+    with open(EXERCISES_DIR / "gopher_quality_filters.json", "w") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+        
+    print("Successfully ran the Gopher Quality Filters Exercise")
             
     
     
@@ -150,6 +181,9 @@ def main(args):
         
     if args.harmful_content:
         run_harmful_content_exercise()
+        
+    if args.gopher:
+        run_gopher_quality_filters_exercise()
 
 
 if __name__ == "__main__":
@@ -160,6 +194,7 @@ if __name__ == "__main__":
     parser.add_argument("--identify_lang", action="store_true")
     parser.add_argument("--mask_pii", action="store_true")
     parser.add_argument("--harmful_content", action="store_true")
+    parser.add_argument("--gopher", action="store_true")
     args = parser.parse_args()
     
     main(args)

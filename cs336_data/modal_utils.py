@@ -20,6 +20,7 @@ shared_data_volume = modal.Volume.from_name(
 def build_image(*, include_tests: bool = False) -> modal.Image:
     image = modal.Image.debian_slim(python_version="3.12")
     image = image.uv_sync()
+    image = image.run_commands("apt-get install -y wget")
     image = image.add_local_python_source("cs336_basics")
     image = image.add_local_python_source("cs336_data")
     image = image.add_local_file("AGENTS.md", "/root/AGENTS.md")

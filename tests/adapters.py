@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import os
 from typing import Any
-from scripts.filtering import (extract_text, 
+from cs336_data.filtering import (extract_text, 
                                identify_language, 
                                mask_emails,
                                mask_phone_numbers,
                                mask_ip_addresses,
                                classify_nsfw,
-                               classify_toxic_speech)
+                               classify_toxic_speech,
+                               gopher_quality_filter,
+                               classify_quality)
 
 
 
@@ -41,11 +43,11 @@ def run_classify_toxic_speech(text: str) -> tuple[Any, float]:
 
 
 def run_classify_quality(text: str) -> tuple[Any, float]:
-    raise NotImplementedError
+    return classify_quality(text)
 
 
 def run_gopher_quality_filter(text: str) -> bool:
-    raise NotImplementedError
+    return gopher_quality_filter(text)
 
 
 def run_exact_line_deduplication(
