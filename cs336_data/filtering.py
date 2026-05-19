@@ -21,7 +21,8 @@ IP_PAT = re.compile(r'(((?!25?[6-9])[12]\d|[1-9])?\d\.?\b){4}\b')
 LANGUAGE_MODEL = load_model(str(DATA_DIR / "classifiers" / "lid.176.bin"))
 NSFW_MODEL = load_model(str(DATA_DIR / "classifiers" / "dolma_fasttext_nsfw_jigsaw_model.bin"))
 TOXIC_SPEECH_MODEL = load_model(str(DATA_DIR / "classifiers" / "dolma_fasttext_hatespeech_jigsaw_model.bin"))
-QUALITY_CLASSIFIER_MODEL = load_model(str(DATA_DIR) / "classifiers" / "fasttext_quality_classifier.bin")
+#QUALITY_CLASSIFIER_MODEL = load_model(str(DATA_DIR / "classifiers" / "fasttext_quality_classifier.bin"))
+QUALITY_CLASSIFIER_MODEL = None
 
 # Gopher Filters
 MIN_WORDS = 50
