@@ -56,7 +56,9 @@ def download_urls(index, urls: list):
     (LOCAL_DATA_PATH / "warc_chunks").mkdir(exist_ok=True)
     chunk_warc_path = LOCAL_DATA_PATH / "warc_chunks" / f"chunk_{index}"
     subprocess.run(["wget", 
-                    "--timeout=60", 
+                    "--tries=3"
+                    "--timeout=15", 
+                    "--quiet",
                     "-i", str(chunk_url_path), 
                     f"--warc-file={chunk_warc_path}", 
                     "-O", "/dev/null"])
