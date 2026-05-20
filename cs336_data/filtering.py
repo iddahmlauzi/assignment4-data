@@ -21,8 +21,7 @@ IP_PAT = re.compile(r'(((?!25?[6-9])[12]\d|[1-9])?\d\.?\b){4}\b')
 LANGUAGE_MODEL = load_model(str(DATA_DIR / "classifiers" / "lid.176.bin"))
 NSFW_MODEL = load_model(str(DATA_DIR / "classifiers" / "dolma_fasttext_nsfw_jigsaw_model.bin"))
 TOXIC_SPEECH_MODEL = load_model(str(DATA_DIR / "classifiers" / "dolma_fasttext_hatespeech_jigsaw_model.bin"))
-#QUALITY_CLASSIFIER_MODEL = load_model(str(DATA_DIR / "classifiers" / "fasttext_quality_classifier.bin"))
-QUALITY_CLASSIFIER_MODEL = None
+
 
 # Gopher Filters
 MIN_WORDS = 50
@@ -34,8 +33,12 @@ MIN_ALPHA_WORD_RATIO = 0.8
 
 
 # Filtering Thresholds
-LANGUAGE_THRESHOLD = 0.5
+LANGUAGE_THRESHOLD = 0.86
 HARMFUL_THRESHOLD = 0.95
+
+# C4 Filters
+MIN_WORDS_PER_SENTENCE = 3
+MIN_SENTENCES_PER_DOC = 5
 
 def extract_text(html_bytes: bytes) -> str:
     """Extracts text from a byte string containing raw HTML"""
@@ -127,6 +130,80 @@ def gopher_quality_filter(text: str) -> bool:
     return True
 
 
+
+def c4_quality_filter(text: str) -> tuple[str, str]:
+    """
+    Implements the filter heuristics used to make the C4 dataset
+    Heuristics taken from: https://jmlr.org/papers/volume21/20-074/20-074.pdf
+    
+    Args:
+        text (str): the input text for one document
+    Returns:
+       tuple[str, str]: 
+            - string indicating which filter the document failed at or "passed" if the text passes 
+            - The cleaned text
+    """
+    lower_text = text.lower()
+    cleaned_text = ""
+    
+    # 1. Many of the scraped pages contained warnings stating that Javascript 
+    #    should be enabled so we removed any line with the word Javascript
+    if "javascript" in lower_text:
+        return "javascript", cleaned_text
+    
+    # 2. Some pages had placeholder “lorem ipsum” text; 
+    #    we removed any page where the phrase “lorem ipsum” appeared
+    if "lorem ipsum" in lower_text:
+        return "lorem ipsum", cleaned_text
+    
+    # 3. Some pages inadvertently contained code. Since the curly bracket “{” 
+    #    appears in many programming languages (such as Javascript, widely used on the web) 
+    #    but not in natural text, we removed any pages that contained a curly bracket
+    if "{" in lower_text or "}" in lower_text:
+        return "curly bracket", cleaned_text
+    
+    # 4. We used langdetect7 to filter out any pages that were not classified as English 
+    #    with a probability of at least 0.99 (about 0.86 confidence when using fasttext)
+    lang, lang_score = identify_language(text)
+    if lang != "en" or lang_score < LANGUAGE_THRESHOLD:
+        return "language", cleaned_text
+    
+    
+    # 5. We removed any page that contained any word on the “List of Dirty, Naughty, Obscene or Otherwise Bad Words”
+    #    (Here using the fasttext classifier instead)
+    nsfw_pred, nsfw_score = classify_nsfw(text)
+    if nsfw_pred == "nsfw" and nsfw_score >= HARMFUL_THRESHOLD:
+        return "nsfw", cleaned_text
+    
+    toxic_pred, toxic_score = classify_toxic_speech(text)
+    if toxic_pred == "toxic" and toxic_score >= HARMFUL_THRESHOLD:
+        return "toxic", cleaned_text
+    
+    # Line level filters
+    all_lines = text.split("\n")
+    retained_lines = []
+    for line in all_lines:
+        # 6. We only retained lines that ended in a terminal punctuation mark 
+        #    (i.e. a period, exclamation mark, question mark, or end quotation mark)
+        if not line.endswith((".", "!", "?", '"')):
+            continue
+        
+        # 7. Only retained lines that contained at least 3 words
+        num_words = len(line.split())
+        if num_words < MIN_WORDS_PER_SENTENCE:
+            continue
+        
+        retained_lines.append(line)
+        
+    if len(retained_lines) < MIN_SENTENCES_PER_DOC:
+        return "document too short", ""
+    
+    cleaned_text = "\n".join(retained_lines)
+    
+    return "passed", cleaned_text
+    
+
+
 def is_high_quality(text: str) -> bool:
     """Given a text, applies filters and returns a bool indicating whether the text is high quality"""
     
@@ -153,10 +230,17 @@ def is_high_quality(text: str) -> bool:
 def classify_quality(text: str) -> tuple[Any, float]:
     """Uses the trained quality classifier to classify the quality of the text"""
     
-    label, prob = QUALITY_CLASSIFIER_MODEL.predict(text)
+    # Putting this here cause it exists locally so modal won't open it
+    model = load_model(str(DATA_DIR / "classifiers" / "fasttext_quality_classifier.bin"))
+    
+    # Fasttext predict method requires input with no newline characters
+    text = text.replace("\n", " ")
+    
+    label, prob = model.predict(text)
     prediction = label[0].split("__")[-1]
     score = prob[0]
     return prediction, score
+
     
     
     

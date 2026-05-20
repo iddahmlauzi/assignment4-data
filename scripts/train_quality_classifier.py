@@ -56,7 +56,7 @@ def download_urls(index, urls: list):
     (LOCAL_DATA_PATH / "warc_chunks").mkdir(exist_ok=True)
     chunk_warc_path = LOCAL_DATA_PATH / "warc_chunks" / f"chunk_{index}"
     subprocess.run(["wget", 
-                    "--tries=3"
+                    "--tries=3",
                     "--timeout=15", 
                     "--quiet",
                     "-i", str(chunk_url_path), 
@@ -75,7 +75,7 @@ def prepare_positive_examples(index):
     """Prepares the positive examples for the provided chunk index"""
     
     all_texts = []
-    with open(LOCAL_DATA_PATH / "warc_chunks" / f"chunk_{index}.warc.warc.gz", "rb") as f:
+    with open(LOCAL_DATA_PATH / "warc_chunks" / f"chunk_{index}.warc.gz", "rb") as f:
         for record in ArchiveIterator(f, record_types=WarcRecordType.response):
             try:
                 html_bytes = record.reader.read()
@@ -98,8 +98,7 @@ def prepare_negative_examples():
         for record in ArchiveIterator(f, record_types=WarcRecordType.response):
             html_bytes = record.reader.read()
             text = extract_text(html_bytes)
-            if is_high_quality(text):
-                all_texts.append(text)
+            all_texts.append(text)
                 
     with open(LOCAL_DATA_PATH / "negative_examples.txt", "w") as f:
         f.writelines(text + "\n" for text in all_texts)
