@@ -11,7 +11,7 @@ from cs336_data.filtering import (extract_text,
                                classify_toxic_speech,
                                gopher_quality_filter,
                                classify_quality)
-from cs336_data.deduplication import exact_line_deduplication
+from cs336_data.deduplication import exact_line_deduplication, minhash_deduplication
 
 
 
@@ -65,4 +65,4 @@ def run_minhash_deduplication(
     jaccard_threshold: float,
     output_directory: os.PathLike,
 ):
-    raise NotImplementedError
+    return minhash_deduplication(input_files, num_hashes, num_bands, ngrams, jaccard_threshold, output_directory)

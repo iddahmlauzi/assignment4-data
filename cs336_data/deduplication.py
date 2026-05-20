@@ -45,15 +45,17 @@ def normalize(text: str) -> str:
     table = str.maketrans("", "", string.punctuation)
     text = text.translate(table).lower()
     
-    return text     
+    return text  
+   
 
 def jaccard_similarity(a: set[str], b: set[str]) -> float:
-    """Given two texts, computes the jaccard similarity between them"""
+    """Given two sets of ngrams, computes the jaccard similarity between them"""
     
-    # Make the ngrams
-    # Get the score
-    # TODO: write this properly
-    return 0
+    if len(a) == 0 and len(b) == 0:
+        return 1
+    
+    return len(a & b) / len(a | b)
+
                         
 def minhash_deduplication(
     input_files: list[os.PathLike],
@@ -97,13 +99,15 @@ def minhash_deduplication(
                 lsh_buckets[(i, band)] = []
             lsh_buckets[(i, band)].append(filepath)
     
+    # Cluster all the files, marking the duplicates to remove
+    to_discard = set()
     for bucket in lsh_buckets:
-       filepaths = lsh_buckets[bucket]
-       
-       # Efficiency: Only open each file once --> and get the ngrams
-       # Don't want to store a huge dict for all ngrams in all files as this is large peak memory
-       all_ngrams =  []
-       for filepath in filepaths:
+        filepaths = lsh_buckets[bucket]
+        
+        # Efficiency: Only open each file once --> and get the ngrams
+        # Don't want to store a huge dict for all ngrams in all files as this is large peak memory
+        all_ngrams =  []
+        for filepath in filepaths:
             file_ngrams = set()
             with open(filepath) as f:
                text = "\n".join(f.readlines())
@@ -115,11 +119,27 @@ def minhash_deduplication(
             all_ngrams.append(file_ngrams)
                
         # Now that we have all the ngrams, we can cluster
-       for i in range(len(all_ngrams)):
-           for j in range(i + 1, len(all_ngrams)):
-            file1_ngrams = all_ngrams[i]
-            file2_ngrams = all_ngrams[j]
-            similarity = jaccard_similarity(file1_ngrams, file2_ngrams)
+        for i in range(len(all_ngrams)):
+            for j in range(i + 1, len(all_ngrams)):
+                file1_ngrams = all_ngrams[i]
+                file2_ngrams = all_ngrams[j]
+                similarity = jaccard_similarity(file1_ngrams, file2_ngrams)
+                
+                if similarity >= jaccard_threshold:
+                    to_discard.add(filepaths[j])
+                    
+    
+    # Finally, write the new files with duplicates removed
+    for filepath in input_files:
+        if filepath not in to_discard:
+            with open(filepath, "r") as f:    
+                lines = f.readlines()
+            output_filepath = Path(output_directory) / Path(filepath).name
+            with open(output_filepath, "w") as out:
+                out.writelines(lines)
+            
+            
+            
             
     
                     
