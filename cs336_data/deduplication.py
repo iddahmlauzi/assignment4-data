@@ -45,7 +45,15 @@ def normalize(text: str) -> str:
     table = str.maketrans("", "", string.punctuation)
     text = text.translate(table).lower()
     
-    return text      
+    return text     
+
+def jaccard_similarity(a: set[str], b: set[str]) -> float:
+    """Given two texts, computes the jaccard similarity between them"""
+    
+    # Make the ngrams
+    # Get the score
+    # TODO: write this properly
+    return 0
                         
 def minhash_deduplication(
     input_files: list[os.PathLike],
@@ -67,10 +75,10 @@ def minhash_deduplication(
     """
     lsh_buckets = {}
     for filepath in input_files:
-        f = open(filepath)
-        
+        with open(filepath, "r") as f:    
+            text = "\n".join(f.readlines())
+            
         # Normalization improves minhash recall
-        text = "\n".join(f.readlines())
         text = normalize(text)
         words = text.split()
         
@@ -84,9 +92,34 @@ def minhash_deduplication(
         # Locality Sensitive Hashing 
         band_size = num_hashes // num_bands
         for i in range(num_bands):
-            band = signature[i * band_size: i * band_size + band_size]
-    #       locality dict [band] .append(the filename)
+            band = tuple(signature[i * band_size: (i + 1) * band_size])
+            if (i , band) not in lsh_buckets:
+                lsh_buckets[(i, band)] = []
+            lsh_buckets[(i, band)].append(filepath)
     
+    for bucket in lsh_buckets:
+       filepaths = lsh_buckets[bucket]
+       
+       # Efficiency: Only open each file once --> and get the ngrams
+       # Don't want to store a huge dict for all ngrams in all files as this is large peak memory
+       all_ngrams =  []
+       for filepath in filepaths:
+            file_ngrams = set()
+            with open(filepath) as f:
+               text = "\n".join(f.readlines())
+            text = normalize(text)
+            words = text.split()
+            for i in range(len(words) - ngrams + 1):
+                ngram = " ".join(words[i: i + ngrams])
+                file_ngrams.add(ngram)
+            all_ngrams.append(file_ngrams)
+               
+        # Now that we have all the ngrams, we can cluster
+       for i in range(len(all_ngrams)):
+           for j in range(i + 1, len(all_ngrams)):
+            file1_ngrams = all_ngrams[i]
+            file2_ngrams = all_ngrams[j]
+            similarity = jaccard_similarity(file1_ngrams, file2_ngrams)
+            
     
-    # That seems like the first loop --> Making the locality dict. Now i do wonder: do I need to store the original signature per filepath? For calculating jaccard per locality bucket band
                     
