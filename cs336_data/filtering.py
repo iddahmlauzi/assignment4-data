@@ -34,7 +34,7 @@ MIN_ALPHA_WORD_RATIO = 0.8
 
 # Filtering Thresholds
 LANGUAGE_THRESHOLD = 0.86
-HARMFUL_THRESHOLD = 0.95
+HARMFUL_THRESHOLD = 0.90
 
 # C4 Filters
 MIN_WORDS_PER_SENTENCE = 3
@@ -146,11 +146,6 @@ def c4_quality_filter(text: str) -> tuple[str, str]:
     lower_text = text.lower()
     cleaned_text = ""
     
-    # 1. Many of the scraped pages contained warnings stating that Javascript 
-    #    should be enabled so we removed any line with the word Javascript
-    if "javascript" in lower_text:
-        return "javascript", cleaned_text
-    
     # 2. Some pages had placeholder “lorem ipsum” text; 
     #    we removed any page where the phrase “lorem ipsum” appeared
     if "lorem ipsum" in lower_text:
@@ -161,13 +156,7 @@ def c4_quality_filter(text: str) -> tuple[str, str]:
     #    but not in natural text, we removed any pages that contained a curly bracket
     if "{" in lower_text or "}" in lower_text:
         return "curly bracket", cleaned_text
-    
-    # 4. We used langdetect7 to filter out any pages that were not classified as English 
-    #    with a probability of at least 0.99 (about 0.86 confidence when using fasttext)
-    lang, lang_score = identify_language(text)
-    if lang != "en" or lang_score < LANGUAGE_THRESHOLD:
-        return "language", cleaned_text
-    
+        
     
     # 5. We removed any page that contained any word on the “List of Dirty, Naughty, Obscene or Otherwise Bad Words”
     #    (Here using the fasttext classifier instead)
@@ -183,6 +172,10 @@ def c4_quality_filter(text: str) -> tuple[str, str]:
     all_lines = text.split("\n")
     retained_lines = []
     for line in all_lines:
+        # 1. Many of the scraped pages contained warnings stating that Javascript 
+        #    should be enabled so we removed any line with the word Javascript
+        if "javascript" in line.lower():
+            continue
         # 6. We only retained lines that ended in a terminal punctuation mark 
         #    (i.e. a period, exclamation mark, question mark, or end quotation mark)
         if not line.endswith((".", "!", "?", '"')):
@@ -199,6 +192,12 @@ def c4_quality_filter(text: str) -> tuple[str, str]:
         return "document too short", ""
     
     cleaned_text = "\n".join(retained_lines)
+    
+    # 4. We used langdetect7 to filter out any pages that were not classified as English 
+    #    with a probability of at least 0.99 (about 0.86 confidence when using fasttext)
+    lang, lang_score = identify_language(cleaned_text)
+    if lang != "en" or lang_score < LANGUAGE_THRESHOLD:
+        return "language", ""
     
     return "passed", cleaned_text
     

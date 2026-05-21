@@ -35,4 +35,4 @@ VOLUME_MOUNTS: dict[str | PurePosixPath, modal.Volume | modal.CloudBucketMount] 
     str(MODAL_SHARED_PATH): shared_data_volume.read_only(),
 }
 
-MODAL_SECRETS = []
+MODAL_SECRETS = [modal.Secret.from_name("wandb")]

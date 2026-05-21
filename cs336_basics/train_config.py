@@ -39,8 +39,8 @@ class TrainingConfig:
     adam_beta1: float = 0.9
     adam_beta2: float = 0.98
     adam_eps: float = 1e-9
-    wandb_project: str | None = None
-    wandb_entity: str | None = None
+    wandb_project: str | None = "cs336-assignment4"
+    wandb_entity: str | None = "iddah"
     log_interval: int = 20
     save_checkpoints: bool = False
 

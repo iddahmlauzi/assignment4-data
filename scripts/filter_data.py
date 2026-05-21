@@ -49,7 +49,7 @@ def filter_file(filepath: os.PathLike):
                         
                         if filter_name == "passed":
                             if num_passed < MAX_PASSED:
-                                passed.write(json.dumps({"text": text[:500]}) + "\n")        
+                                passed.write(json.dumps({"original_text": text[:500], "cleaned_text": cleaned_text[:500]}) + "\n")        
                             out.write(cleaned_text + EOS_STRING) 
                             
                         else:
